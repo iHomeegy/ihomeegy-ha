@@ -1,0 +1,37 @@
+{
+  "config": {
+    "flow_title": "iHomeegy unit {id}",
+    "step": {
+      "user": {
+        "title": "Add iHomeegy units",
+        "description": "In the iHomeegy app (owner or admin): Members > Invite, choose the units and the cards Home Assistant may control, then tap Copy and paste the code here. The code works once and for 15 minutes. Home Assistant must be on the same network as the units.",
+        "data": {
+          "invite": "Invite code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Invite Home Assistant to {name} again",
+        "description": "Home Assistant was removed from this unit, or its invite was replaced. Make a new invite for this unit in the iHomeegy app and paste it here.",
+        "data": {
+          "invite": "Invite code"
+        }
+      }
+    },
+    "error": {
+      "invalid_invite": "This is not an iHomeegy invite code. Copy it again from the app.",
+      "other_unit": "This invite is not for this unit.",
+      "invite_used": "This invite was already used or has expired (15 minutes). Make a new one in the app.",
+      "cannot_connect": "The unit was not found. Check that it is on and on the same network as Home Assistant.",
+      "unit_full": "The unit has no free place for another member.",
+      "license": "The unit's license does not allow another member.",
+      "storage": "The unit could not save the new member. Try again.",
+      "unknown": "Unexpected error. Try again."
+    },
+    "abort": {
+      "already_configured": "These units are already in Home Assistant.",
+      "reauth_successful": "Done. Home Assistant controls the unit again.",
+      "not_ihomeegy": "Not an iHomeegy unit.",
+      "not_paired": "Set this unit up in the iHomeegy app first."
+    }
+  }
+}

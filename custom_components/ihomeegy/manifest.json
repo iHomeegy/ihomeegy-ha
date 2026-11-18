@@ -1,0 +1,13 @@
+{
+  "domain": "ihomeegy",
+  "name": "iHomeegy",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/iHomeegy/ihomeegy-ha",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/iHomeegy/ihomeegy-ha/issues",
+  "requirements": ["noiseprotocol==0.3.1"],
+  "version": "0.1.0",
+  "zeroconf": ["_ihomenoise._tcp.local."]
+}
