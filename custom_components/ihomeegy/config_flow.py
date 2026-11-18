@@ -113,15 +113,16 @@ class IhomeegyConfigFlow(ConfigFlow, domain=DOMAIN):
                                 DOMAIN, context={"source": SOURCE_IMPORT}, data=data
                             )
                         )
+                    # Never abort after a claim: the unit already holds the new key. A discovery of the same unit that
+                    # is still waiting in the list must not stop this (it is closed when the entry is made).
                     first = done[0]
-                    await self.async_set_unique_id(first[CONF_UNIT_ID])
-                    self._abort_if_unique_id_configured()
+                    await self.async_set_unique_id(first[CONF_UNIT_ID], raise_on_progress=False)
                     return self.async_create_entry(title=first[CONF_NAME], data=first)
         return self.async_show_form(step_id="user", data_schema=_SCHEMA, errors=errors)
 
     async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
         """Another unit of the same invite (already claimed by async_step_user)."""
-        await self.async_set_unique_id(import_data[CONF_UNIT_ID])
+        await self.async_set_unique_id(import_data[CONF_UNIT_ID], raise_on_progress=False)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(title=import_data[CONF_NAME], data=import_data)
 
