@@ -8,6 +8,6 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/iHomeegy/ihomeegy-ha/issues",
   "requirements": ["noiseprotocol==0.3.1"],
-  "version": "0.1.3",
+  "version": "0.1.4",
   "zeroconf": ["_ihomenoise._tcp.local."]
 }

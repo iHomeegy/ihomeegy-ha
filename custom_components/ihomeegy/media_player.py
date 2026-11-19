@@ -1,7 +1,7 @@
 """The TVs kept in a Universal IR unit (a remote made in the iHomeegy app, from the library or learned).
 
 A TV never answers an IR remote, so on / off is what Home Assistant last sent (kept across restarts), as on every
-universal remote. Only the buttons the remote really has are offered.
+universal remote; a new TV starts as "off" (Home Assistant shows no controls for an "unknown" media player). Only the buttons the remote really has are offered.
 """
 
 from __future__ import annotations
@@ -72,7 +72,7 @@ class IhIrTv(IhEntity, MediaPlayerEntity, RestoreEntity):
             feats |= MediaPlayerEntityFeature.SELECT_SOURCE
             self._attr_source_list = list(self._sources)
         self._attr_supported_features = feats
-        self._on: bool | None = None
+        self._on = False
         self._muted: bool | None = None
         self._seen_last: str | None = None
         self._update_name()
@@ -111,9 +111,7 @@ class IhIrTv(IhEntity, MediaPlayerEntity, RestoreEntity):
         return super().available and self._rid in self._client.ir
 
     @property
-    def state(self) -> MediaPlayerState | None:
-        if self._on is None:
-            return None
+    def state(self) -> MediaPlayerState:
         return MediaPlayerState.ON if self._on else MediaPlayerState.OFF
 
     @property
