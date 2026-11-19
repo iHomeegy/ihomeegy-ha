@@ -9,6 +9,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import time
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,7 +18,11 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.event import async_track_time_interval
+
+from . import ir as ihir
 
 from .const import CONF_HOST, CONF_KEY, CONF_PORT, CONF_UNIT_ID, DEFAULT_PORT, DOMAIN, MANUFACTURER, ZEROCONF_TYPE
 from .protocol import UnitClient
@@ -31,6 +37,7 @@ PLATFORMS: list[Platform] = [
     Platform.FAN,
     Platform.LIGHT,
     Platform.LOCK,
+    Platform.MEDIA_PLAYER,
     Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,
@@ -48,7 +55,10 @@ def signal_update(entry_id: str) -> str:
 
 def _entity_signature(client: UnitClient) -> tuple:
     """What decides which entities exist: when it changes, the entry is reloaded."""
-    return tuple(sorted((e["id"], e.get("type", "")) for e in client.entities()))
+    return tuple(sorted((e["id"], e.get("type", "")) for e in client.entities())), ihir.signature(client.ir)
+
+
+IR_REFRESH = timedelta(minutes=5)  # remotes added / changed in the app (the unit does not announce them)
 
 
 async def find_unit(hass: HomeAssistant, unit_id: str, timeout: float = 4.0) -> tuple[str, int] | None:
@@ -90,6 +100,31 @@ async def find_unit(hass: HomeAssistant, unit_id: str, timeout: float = 4.0) -> 
 async def async_setup_entry(hass: HomeAssistant, entry: IhConfigEntry) -> bool:
     unit_id: str = entry.data[CONF_UNIT_ID]
     signature: list[tuple] = []
+    ir_run: dict[str, Any] = {"busy": False, "at": 0.0, "was_connected": False, "ids": set()}
+
+    async def _refresh_ir() -> None:
+        """Read the Universal IR remotes again (a new / changed / deleted remote reloads the entry)."""
+        if ir_run["busy"] or not client.connected or ihir.ir_card(client) is None:
+            return
+        ir_run["busy"] = True
+        ir_run["at"] = time.monotonic()
+        try:
+            got = await ihir.fetch(client, client.ir)
+        finally:
+            ir_run["busy"] = False
+        if got is None:
+            return
+        remotes, ir_run["ids"] = got
+        names_changed = {r["id"]: r["n"] for r in remotes.values()} != {r["id"]: r["n"] for r in client.ir.values()}
+        client.ir = remotes
+        if signature and _entity_signature(client) != signature[0]:
+            signature[0] = _entity_signature(client)
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+        elif names_changed:
+            async_dispatcher_send(hass, signal_update(entry.entry_id))
+
+    def _schedule_ir() -> None:
+        hass.async_create_background_task(_refresh_ir(), f"ihomeegy ir {unit_id}")
 
     @callback
     def _on_update() -> None:
@@ -98,6 +133,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: IhConfigEntry) -> bool:
             signature[0] = _entity_signature(client)
             hass.config_entries.async_schedule_reload(entry.entry_id)
             return
+        if signature:
+            if client.connected and not ir_run["was_connected"]:
+                _schedule_ir()  # (re)connected: the remotes may have changed meanwhile
+            else:
+                last = (client.state.get("ir1") or {}).get("last") if isinstance(client.state.get("ir1"), dict) else None
+                if isinstance(last, dict) and time.monotonic() - ir_run["at"] > 30:
+                    if any(k not in ir_run["ids"] for k in last):  # a button of a remote we do not know (maybe a new one)
+                        _schedule_ir()
+        ir_run["was_connected"] = client.connected
         async_dispatcher_send(hass, signal_update(entry.entry_id))
 
     @callback
@@ -121,8 +165,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: IhConfigEntry) -> bool:
     if not await client.wait_ready(20):
         await client.stop()
         raise ConfigEntryNotReady(f"iHomeegy unit {unit_id} is not reachable")
+    if ihir.ir_card(client) is not None:
+        got = await ihir.fetch(client, {})
+        if got is not None:
+            client.ir, ir_run["ids"] = got
+            # a remote deleted in the app: its entity goes too (only IR ones; they are made again if it comes back)
+            keep = {f"{unit_id}_ir1_{r['k']}{r['id']}" for r in client.ir.values()}
+            reg = er.async_get(hass)
+            for ent in er.async_entries_for_config_entry(reg, entry.entry_id):
+                if ent.unique_id.startswith(f"{unit_id}_ir1_") and ent.unique_id not in keep:
+                    reg.async_remove(ent.entity_id)
+        ir_run["at"] = time.monotonic()
     signature.append(_entity_signature(client))
+    ir_run["was_connected"] = client.connected
     entry.runtime_data = client
+
+    async def _periodic(_now: Any) -> None:
+        await _refresh_ir()
+
+    entry.async_on_unload(async_track_time_interval(hass, _periodic, IR_REFRESH))
 
     desc = client.desc
     dr.async_get(hass).async_get_or_create(

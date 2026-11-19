@@ -17,6 +17,8 @@ _REFUSALS = {
     "forbidden": "The owner did not give Home Assistant this card",
     "license": "The unit's license does not allow it",
     "busy": "The unit is busy right now (e.g. a moving shutter), try again",
+    "not_found": "This remote has no code for that (add the button in the iHomeegy app)",
+    "no_ir": "The unit's IR transmitter is not set up",
 }
 
 

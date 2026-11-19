@@ -305,6 +305,7 @@ class UnitClient:
         self.hello: dict[str, Any] = {}
         self.desc: dict[str, Any] = {}
         self.state: dict[str, Any] = {}
+        self.ir: dict[int, dict[str, Any]] = {}  # a Universal IR unit's TV / A/C remotes (ir.py), kept by __init__.py
         self.connected = False
         self._link: NoiseLink | None = None
         self._task: asyncio.Task | None = None

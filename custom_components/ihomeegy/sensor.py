@@ -44,7 +44,7 @@ _METER = (
     _Reading("pf", "Power factor", None, SensorDeviceClass.POWER_FACTOR, SensorStateClass.MEASUREMENT, 2),
     _Reading("kwh", "Energy", UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, 3),
     _Reading("today", "Energy today", UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, 3),
-    _Reading("temp", "Meter temperature", UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT, 1),
+    _Reading("temp", "Temperature", UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT, 1),
 )
 
 

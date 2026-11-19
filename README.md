@@ -21,6 +21,12 @@ uses), and the unit itself checks every command against the cards it was given.
 | Siren | Siren |
 | Inputs, RF hub sensors | Binary sensor (door, window, motion, smoke, gas, water leak, ...) |
 | Temperature / humidity, Energy Meter readings | Sensor |
+| Universal IR: TV remotes | Media player (power, volume, mute, channel up / down, channel number, inputs) |
+| Universal IR: air conditioner remotes | Climate (off, modes, temperature, fan, swing) |
+
+Universal IR remotes are made in the iHomeegy app; a remote added, changed or deleted there shows up in Home
+Assistant within 5 minutes. A TV or an A/C never answers an infrared remote, so Home Assistant shows the last
+setting sent (from Home Assistant, the app or a scene). Other remote kinds (fan, receiver, ...) are not shown yet.
 
 Changes made in the iHomeegy app, by automations in the unit or by the wall switch show up in Home Assistant at once
 (local push).
